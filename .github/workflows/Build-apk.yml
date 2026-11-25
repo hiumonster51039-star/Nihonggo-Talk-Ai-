@@ -1,4 +1,4 @@
-concurrency: name: Build Nihongo Talk AI APK
+name: Build Nihongo Talk AI APK
 
 on:
   workflow_dispatch:
