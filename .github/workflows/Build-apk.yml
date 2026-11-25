@@ -41,24 +41,20 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Align Java and Kotlin JVM targets
+      - name: Align Kotlin JVM target
         run: |
-          cat > /tmp/jvm17.init.gradle <<'EOF'
+          cat > /tmp/jvm.init.gradle <<'EOF'
           allprojects {
-            tasks.withType(JavaCompile).configureEach {
-              sourceCompatibility = '17'
-              targetCompatibility = '17'
-            }
             tasks.matching {
               it.class.name == 'org.jetbrains.kotlin.gradle.tasks.KotlinCompile'
             }.configureEach {
-              kotlinOptions.jvmTarget = '17'
+              kotlinOptions.jvmTarget = '1.8'
             }
           }
           EOF
 
       - name: Build APK
-        run: gradle -I /tmp/jvm17.init.gradle assembleDebug
+        run: gradle -I /tmp/jvm.init.gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
