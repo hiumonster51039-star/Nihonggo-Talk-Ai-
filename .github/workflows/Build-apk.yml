@@ -1,68 +1,68 @@
 name: Build Nihongo Talk AI APK
 
 on:
-workflow_dispatch:
-push:
-branches:
-- main
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
-contents: read
+  contents: read
 
 jobs:
-build:
-runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Set up Java 17
-    uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: '17'
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-  - name: Extract Android project
-    run: |
-      if [ ! -d app ]; then
-        mkdir -p /tmp/project
-        unzip -q NihongoTalkAI_Android_CloudBuild.zip -d /tmp/project
-        SETTINGS=$(find /tmp/project -type f -name settings.gradle -o -name settings.gradle.kts -print -quit)
-        if [ -z "$SETTINGS" ]; then
-          echo "Project settings not found"
-          exit 1
-        fi
-        cp -a "$(dirname "$SETTINGS")"/. .
-      fi
+      - name: Extract Android project
+        run: |
+          if [ ! -d app ]; then
+            mkdir -p /tmp/project
+            unzip -q NihongoTalkAI_Android_CloudBuild.zip -d /tmp/project
+            SETTINGS=$(find /tmp/project -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)
+            if [ -z "$SETTINGS" ]; then
+              echo "Project settings not found"
+              exit 1
+            fi
+            cp -a "$(dirname "$SETTINGS")"/. .
+          fi
 
-  - name: Set up Gradle
-    uses: gradle/actions/setup-gradle@v4
-    with:
-      gradle-version: '8.9'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
 
-  - name: Align Java and Kotlin JVM targets
-    run: |
-      cat > /tmp/jvm17.init.gradle <<'EOF'
-      allprojects {
-        tasks.withType(JavaCompile).configureEach {
-          sourceCompatibility = '17'
-          targetCompatibility = '17'
-        }
-        tasks.matching {
-          it.class.name == 'org.jetbrains.kotlin.gradle.tasks.KotlinCompile'
-        }.configureEach {
-          kotlinOptions.jvmTarget = '17'
-        }
-      }
-      EOF
+      - name: Align Java and Kotlin JVM targets
+        run: |
+          cat > /tmp/jvm17.init.gradle <<'EOF'
+          allprojects {
+            tasks.withType(JavaCompile).configureEach {
+              sourceCompatibility = '17'
+              targetCompatibility = '17'
+            }
+            tasks.matching {
+              it.class.name == 'org.jetbrains.kotlin.gradle.tasks.KotlinCompile'
+            }.configureEach {
+              kotlinOptions.jvmTarget = '17'
+            }
+          }
+          EOF
 
-  - name: Build APK
-    run: gradle -I /tmp/jvm17.init.gradle assembleDebug
+      - name: Build APK
+        run: gradle -I /tmp/jvm17.init.gradle assembleDebug
 
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: NihongoTalkAI-debug-apk
-      path: app/build/outputs/apk/debug/app-debug.apk
-      if-no-files-found: error
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NihongoTalkAI-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
