@@ -12,6 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,7 +26,7 @@ jobs:
       - name: Extract Android project if needed
         shell: bash
         run: |
-          if [ ! -f settings.gradle ] && [ ! -f settings.gradle.kts ]; then
+          if [ ! -f app/build.gradle ] && [ ! -f app/build.gradle.kts ]; then
             ZIP_FILE="NihongoTalkAI_Android_CloudBuild.zip"
             if [ ! -f "$ZIP_FILE" ]; then
               ZIP_FILE="NihongoTalkAI_Android_CloudBuild (1).zip"
@@ -34,21 +35,29 @@ jobs:
               echo "Android project ZIP was not found in the repository root."
               exit 1
             fi
+
             mkdir -p /tmp/nihongo-project
-            unzip -q "$ZIP_FILE" -d /tmp/nihongo-project
-            SETTINGS_FILE="$(find /tmp/nihongo-project -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)"
+            unzip -q -o "$ZIP_FILE" -d /tmp/nihongo-project
+
+            SETTINGS_FILE="$(find /tmp/nihongo-project -type f \\( -name settings.gradle -o -name settings.gradle.kts \\) -print -quit)"
             if [ -z "$SETTINGS_FILE" ]; then
               echo "settings.gradle or settings.gradle.kts was not found inside the ZIP."
               exit 1
             fi
+
             PROJECT_DIR="$(dirname "$SETTINGS_FILE")"
             cp -a "$PROJECT_DIR"/. .
+          fi
+
+          if [ ! -f app/build.gradle ] && [ ! -f app/build.gradle.kts ]; then
+            echo "Android app module was not found after extraction."
+            exit 1
           fi
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: platform-tools
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -56,7 +65,7 @@ jobs:
           gradle-version: '8.9'
 
       - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+        run: gradle :app:assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
